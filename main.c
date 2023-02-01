@@ -67,6 +67,7 @@ int main(void) {
             printf(ANSI_COLOR_YELLOW "Exiting Shell...\n" ANSI_COLOR_RESET);
             exit(0);
         }
+        add_history(input);
         parse_input(input);
 
         free(input);
