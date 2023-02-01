@@ -4,21 +4,17 @@
 #include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <sys/wait.h>
+#include <pwd.h>
 #include "exec.h"
 #include "colors.h"
-#include <pwd.h>
-
-//char *getcwd(char *buf, size_t size);
 
 void parse_input(char *command) {
     struct command all_commands[1024];
-    char *argv[1024];
     int argc = 0;
     char *saveptr1, *saveptr2;
     char *concurrent_command = strtok_r(command, ";", &saveptr1);
     while (concurrent_command) {
-        argv[argc++] = concurrent_command;
+        argc++;
 
         char *part[2000];
         int part_num = 0;
@@ -36,26 +32,23 @@ void parse_input(char *command) {
         part[part_num] = NULL;
         concurrent_command = strtok_r(NULL, ";", &saveptr1);
     }
-    argv[argc] = NULL;
     execute_commands(argc, all_commands);
     for (int i = 0; i < argc; ++i) {
         free(all_commands[i].parts);
     }
 }
 
-
 int main(void) {
-    char *input;
     char *username;
     uid_t uid = geteuid();
     struct passwd *pw = getpwuid(uid);
     char hostname[256];
-    int ret = gethostname(hostname, sizeof(hostname));
+    gethostname(hostname, sizeof(hostname));
     while (1) {
         char prompt[2048];
         char *cwd = getcwd(NULL, 0);
-        sprintf(prompt, "%s%s%s@%s:%s%s%s$ %s%s", ANSI_COLOR_BLUE, pw->pw_name, ANSI_COLOR_RESET, hostname,
-                ANSI_COLOR_GREEN, cwd, ANSI_COLOR_RESET, ANSI_COLOR_CYAN, ANSI_COLOR_RESET);
+        sprintf(prompt, "%s%s%s@%s:%s%s%s$ ", ANSI_COLOR_BLUE, pw->pw_name, ANSI_COLOR_RESET, hostname,
+                ANSI_COLOR_GREEN, cwd, ANSI_COLOR_RESET);
         char *input = readline(prompt);
 
         if (!input) {

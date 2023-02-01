@@ -9,24 +9,29 @@
 
 void execute_commands(int command_count, const struct command *commands) {
     int ran_commands = 0;
-    int is_cd = 0;
-    char *cd_dir;
     // Loop for each command
     for (int i = 0; i < command_count; i++) {
         // Check for zero parts
         if (commands[i].part_count == 0) {
-            fprintf(stderr, ANSI_COLOR_RED "Error: Empty command.\n" ANSI_COLOR_RESET);
+            // We silently ignore these. These cases can be created with lines like ";     ;     ;"
+            // fprintf(stderr, ANSI_COLOR_RED "Error: Empty command.\n" ANSI_COLOR_RESET);
             continue;
         }
-        if(strcmp(commands[i].parts[0],"cd") == 0 ){
-
-            is_cd = 1;
-            cd_dir = commands[i].parts[1];
-            if(chdir(cd_dir) != 0)
-            fprintf(stderr, ANSI_COLOR_RED
-                            "Error: Failed to execute command %s: %s\n"
-                            ANSI_COLOR_RESET,
-                    commands[i].parts[1], strerror(errno));
+        // Check for CD command
+        if (strcmp(commands[i].parts[0], "cd") == 0) {
+            // cd must have at least one argument
+            if (commands[i].part_count < 2) {
+                fprintf(stderr, ANSI_COLOR_RED
+                                "Please supply the path to cd.\n"
+                                ANSI_COLOR_RESET);
+                continue;
+            }
+            // Change the directory
+            if (chdir(commands[i].parts[1]) != 0)
+                fprintf(stderr, ANSI_COLOR_RED
+                                "Error: Failed to cd to %s: %s\n"
+                                ANSI_COLOR_RESET,
+                        commands[i].parts[1], strerror(errno));
             continue;
         }
 
@@ -45,11 +50,10 @@ void execute_commands(int command_count, const struct command *commands) {
             execvp_args[commands[i].part_count] = NULL; // last one should be null
             // Run the command
             if (execvp(execvp_args[0], execvp_args) < 0) {
-
-                    fprintf(stderr, ANSI_COLOR_RED
-                                    "Error: Failed to execute command %s: %s\n"
-                                    ANSI_COLOR_RESET,
-                            execvp_args[0], strerror(errno));
+                fprintf(stderr, ANSI_COLOR_RED
+                                "Error: Failed to execute command %s: %s\n"
+                                ANSI_COLOR_RESET,
+                        execvp_args[0], strerror(errno));
             }
             exit(1);
         } else { // parent and forked
