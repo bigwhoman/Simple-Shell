@@ -9,7 +9,7 @@
 #include "colors.h"
 #include <pwd.h>
 
-char *getcwd(char *buf, size_t size);
+//char *getcwd(char *buf, size_t size);
 
 void parse_input(char *command) {
     struct command all_commands[1024];
@@ -25,14 +25,14 @@ void parse_input(char *command) {
         char copy[1024];
 
         strcpy(copy, concurrent_command);
-        all_commands[argc-1].parts = (char **) calloc(1024, sizeof(char *));
+        all_commands[argc - 1].parts = (char **) calloc(1024, sizeof(char *));
         char *command_part = strtok_r(copy, " ", &saveptr2);
         while (command_part) {
-            all_commands[argc-1].parts[part_num] = strdup(command_part);
+            all_commands[argc - 1].parts[part_num] = strdup(command_part);
             part[part_num++] = command_part;
             command_part = strtok_r(NULL, " ", &saveptr2);
         }
-        all_commands[argc-1].part_count= part_num;
+        all_commands[argc - 1].part_count = part_num;
         part[part_num] = NULL;
         concurrent_command = strtok_r(NULL, ";", &saveptr1);
     }
@@ -46,7 +46,6 @@ void parse_input(char *command) {
 
 int main(void) {
     char *input;
-    char cwd[1024];
     char *username;
     uid_t uid = geteuid();
     struct passwd *pw = getpwuid(uid);
@@ -55,8 +54,8 @@ int main(void) {
     while (1) {
         char prompt[2048];
         char *cwd = getcwd(NULL, 0);
-        sprintf(prompt, "%s%s%s@%s %s~%s%s$ %s", ANSI_COLOR_BLUE, pw->pw_name, ANSI_COLOR_RESET, hostname,
-                ANSI_COLOR_GREEN, cwd, ANSI_COLOR_RESET, ANSI_COLOR_CYAN);
+        sprintf(prompt, "%s%s%s@%s %s~%s%s$ %s%s", ANSI_COLOR_BLUE, pw->pw_name, ANSI_COLOR_RESET, hostname,
+                ANSI_COLOR_GREEN, cwd, ANSI_COLOR_RESET, ANSI_COLOR_CYAN, ANSI_COLOR_RESET);
         char *input = readline(prompt);
 
         if (!input) {
@@ -73,6 +72,5 @@ int main(void) {
         free(input);
         free(cwd);
     }
-
     return 0;
 }

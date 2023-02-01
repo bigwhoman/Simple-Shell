@@ -9,6 +9,8 @@
 
 void execute_commands(int command_count, const struct command *commands) {
     int ran_commands = 0;
+    int is_cd = 0;
+    char *cd_dir;
     // Loop for each command
     for (int i = 0; i < command_count; i++) {
         // Check for zero parts
@@ -16,6 +18,18 @@ void execute_commands(int command_count, const struct command *commands) {
             fprintf(stderr, ANSI_COLOR_RED "Error: Empty command.\n" ANSI_COLOR_RESET);
             continue;
         }
+        if(strcmp(commands[i].parts[0],"cd") == 0 ){
+
+            is_cd = 1;
+            cd_dir = commands[i].parts[1];
+            if(chdir(cd_dir) != 0)
+            fprintf(stderr, ANSI_COLOR_RED
+                            "Error: Failed to execute command %s: %s\n"
+                            ANSI_COLOR_RESET,
+                    commands[i].parts[1], strerror(errno));
+            continue;
+        }
+
         // Fork and execute in child
         int fork_result = fork();
         if (fork_result < 0) {
@@ -27,13 +41,15 @@ void execute_commands(int command_count, const struct command *commands) {
             char *execvp_args[commands[i].part_count + 1];
             for (int j = 0; j < commands[i].part_count; j++)
                 execvp_args[j] = commands[i].parts[j];
+
             execvp_args[commands[i].part_count] = NULL; // last one should be null
             // Run the command
             if (execvp(execvp_args[0], execvp_args) < 0) {
-                fprintf(stderr, ANSI_COLOR_RED
-                                "Error: Failed to execute command %s: %s\n"
-                                ANSI_COLOR_RESET,
-                        execvp_args[0], strerror(errno));
+
+                    fprintf(stderr, ANSI_COLOR_RED
+                                    "Error: Failed to execute command %s: %s\n"
+                                    ANSI_COLOR_RESET,
+                            execvp_args[0], strerror(errno));
             }
             exit(1);
         } else { // parent and forked
