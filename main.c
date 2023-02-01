@@ -25,19 +25,22 @@ void parse_input(char *command) {
         char copy[1024];
 
         strcpy(copy, concurrent_command);
-        all_commands[argc].parts = (char **) calloc(1024, sizeof(char *));
+        all_commands[argc-1].parts = (char **) calloc(1024, sizeof(char *));
         char *command_part = strtok_r(copy, " ", &saveptr2);
         while (command_part) {
-            all_commands[argc].parts[part_num] = command_part;
+            all_commands[argc-1].parts[part_num] = strdup(command_part);
             part[part_num++] = command_part;
             command_part = strtok_r(NULL, " ", &saveptr2);
         }
-        all_commands[argc].part_count = part_num;
+        all_commands[argc-1].part_count= part_num;
         part[part_num] = NULL;
         concurrent_command = strtok_r(NULL, ";", &saveptr1);
     }
     argv[argc] = NULL;
     execute_commands(argc, all_commands);
+    for (int i = 0; i < argc; ++i) {
+        free(all_commands[i].parts);
+    }
 }
 
 
