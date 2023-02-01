@@ -54,7 +54,7 @@ int main(void) {
     while (1) {
         char prompt[2048];
         char *cwd = getcwd(NULL, 0);
-        sprintf(prompt, "%s%s%s@%s %s~%s%s$ %s%s", ANSI_COLOR_BLUE, pw->pw_name, ANSI_COLOR_RESET, hostname,
+        sprintf(prompt, "%s%s%s@%s:%s%s%s$ %s%s", ANSI_COLOR_BLUE, pw->pw_name, ANSI_COLOR_RESET, hostname,
                 ANSI_COLOR_GREEN, cwd, ANSI_COLOR_RESET, ANSI_COLOR_CYAN, ANSI_COLOR_RESET);
         char *input = readline(prompt);
 
