@@ -40,13 +40,13 @@ void parse_input(char *command) {
 
 int main(int argc, char **argv) {
     if (argc > 2) {
-        fprintf(stderr, ANSI_COLOR_RED "Error: Too many arguments\n");
+        fprintf(stderr, ANSI_COLOR_RED "Error: Too many arguments\n" ANSI_COLOR_RESET);
         return 0;
     }
     if (argc == 2) {
         FILE *fp = fopen(argv[1], "r");
         if (fp == NULL) {
-            fprintf(stderr, ANSI_COLOR_RED "Error: File couldn't be opened\n");
+            fprintf(stderr, ANSI_COLOR_RED "Error: File couldn't be opened\n" ANSI_COLOR_RESET);
             exit(0);
         }
 
@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 
         while(fgets(input, 1024, fp)) {
             if (strlen(input) > 512) {
-                fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n");
+                fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n" ANSI_COLOR_RESET);
                 continue;
             }
             parse_input(input);
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
             break;
         }
         if (strlen(input) > 512) {
-            fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n");
+            fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n" ANSI_COLOR_RESET);
             continue;
         }
 
