@@ -8,32 +8,63 @@
 #include "exec.h"
 #include "colors.h"
 
-void parse_input(char *command) {
-    struct command all_commands[1024];
-    int argc = 0;
-    char *saveptr1, *saveptr2;
-    char *concurrent_command = strtok_r(command, ";", &saveptr1);
-    while (concurrent_command) {
-        argc++;
+#include <regex.h>
 
-        char *part[2000];
-        int part_num = 0;
-        char copy[1024];
 
-        strcpy(copy, concurrent_command);
-        all_commands[argc - 1].parts = (char **) calloc(1024, sizeof(char *));
-        char *command_part = strtok_r(copy, " ", &saveptr2);
-        while (command_part) {
-            all_commands[argc - 1].parts[part_num] = strdup(command_part);
-            part[part_num++] = command_part;
-            command_part = strtok_r(NULL, " ", &saveptr2);
-        }
-        all_commands[argc - 1].part_count = part_num;
-        part[part_num] = NULL;
-        concurrent_command = strtok_r(NULL, ";", &saveptr1);
+int get_matches(char **match_array, char *input_string, const char *pattern) {
+    regex_t regex;
+    int reti;
+    char msgbuf[100];
+    regmatch_t matches[5];
+    reti = regcomp(&regex, pattern, REG_EXTENDED);
+    if (reti) {
+        fprintf(stderr, "Could not compile regex\n");
     }
-    execute_commands(argc, all_commands);
-    for (int i = 0; i < argc; ++i) {
+    int concurrent_count = 0;
+    char *p = input_string;
+    while (p) {
+        reti = regexec(&regex, p, 2, matches, 0);
+        if (!reti) {
+            int i;
+            for (i = 0; i < 1; i++) {
+                int start = matches[i].rm_so + (p - input_string);
+                int end = matches[i].rm_eo + (p - input_string);
+                int len = end - start;
+                char captured[len + 1];
+                strncpy(captured, input_string + start, len);
+                captured[len] = '\0';
+                match_array[concurrent_count] = strdup(captured);
+                concurrent_count++;
+            }
+            p += matches[0].rm_eo;
+        } else if (reti == REG_NOMATCH) {
+            break;
+        } else {
+            regerror(reti, &regex, msgbuf, sizeof(msgbuf));
+            fprintf(stderr, "Regex match failed: %s\n", msgbuf);
+        }
+    }
+    regfree(&regex);
+    return concurrent_count;
+}
+
+void parse_input(char *command) {
+    char *concurrent_commands[1024];
+    char *pattern = "(([-a-zA-Z0-9.]+|(\"[^\"]+\"))\\s*)+;?";
+    char *pattern2 = "([-a-zA-Z0-9.]+|(\"[^\"]+\"))";
+    int concurrent_count = get_matches(concurrent_commands, command, pattern);
+    char *command_parts[concurrent_count][1024];
+    struct command all_commands[concurrent_count];
+    for (int i = 0; i < concurrent_count; ++i) {
+        all_commands[i].parts = (char **) calloc(1024, sizeof(char *));
+        int part_count = get_matches(command_parts[i], concurrent_commands[i], pattern2);
+        all_commands[i].part_count = part_count;
+        for (int j = 0; j < part_count; ++j) {
+            all_commands[i].parts[j] = strdup(command_parts[i][j]);
+        }
+    }
+    execute_commands(concurrent_count, all_commands);
+    for (int i = 0; i < concurrent_count; ++i) {
         free(all_commands[i].parts);
     }
 }
@@ -52,7 +83,7 @@ int main(int argc, char **argv) {
 
         char input[1024];
 
-        while(fgets(input, 1024, fp)) {
+        while (fgets(input, 1024, fp)) {
             if (strlen(input) > 512) {
                 fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n" ANSI_COLOR_RESET);
                 continue;
