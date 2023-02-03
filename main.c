@@ -12,8 +12,6 @@
 #include <regex.h>
 #include <dirent.h>
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-
 char execs[20000][512];
 int exec_size = 0;
 
@@ -105,18 +103,20 @@ char **autocomplete(const char *text, int start, int end) {
         if (distance >= 0 && distance < 10) {
             PQItem *item = (PQItem *) malloc(sizeof(PQItem));
             item->distance = -distance;
-            item->value = execs[i];
+            item->value = strdup(execs[i]);
             insert(pq, item);
         }
     }
     if (pq->size < 0) {
         return NULL;
     }
-    char **suggested = (char **) malloc(pq->size * sizeof(char *));
-    for (int i = 0; i < pq->size; i++) {
+    int size = pq->size + 1;
+    char **suggested = (char **) malloc((size + 1) * sizeof(char *));
+    for (int i = 0; i < size; i++) {
         PQItem *min = extractMin(pq);
-        suggested[i] = min->value;
+        suggested[i] = strdup(min->value);
     }
+    suggested[size] = NULL;
     return suggested;
 }
 
