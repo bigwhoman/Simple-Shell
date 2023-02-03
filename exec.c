@@ -55,7 +55,7 @@ void execute_commands(int command_count, const struct command *commands) {
                                 ANSI_COLOR_RESET,
                         execvp_args[0], strerror(errno));
             }
-            exit(1);
+            _exit(1);
         } else { // parent and forked
             ran_commands++;
         }
