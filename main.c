@@ -54,8 +54,8 @@ int get_matches(char **match_array, char *input_string, const char *pattern) {
 
 void parse_input(char *command) {
     char *concurrent_commands[1024];
-    char *pattern = "(([-a-zA-Z0-9.\\/]+|(\"[^\"]+\"))\\s*)+;?";
-    char *pattern2 = "([-a-zA-Z0-9.\\/]+|(\"[^\"]+\"))";
+    char *pattern = "(([-_a-zA-Z0-9.\\/]+|(\"[^\"]+\"))\\s*)+;?";
+    char *pattern2 = "([-_a-zA-Z0-9.\\/]+|(\"[^\"]+\"))";
     int concurrent_count = get_matches(concurrent_commands, command, pattern);
     char *command_parts[concurrent_count][1024];
     struct command all_commands[concurrent_count];
@@ -64,7 +64,12 @@ void parse_input(char *command) {
         int part_count = get_matches(command_parts[i], concurrent_commands[i], pattern2);
         all_commands[i].part_count = part_count;
         for (int j = 0; j < part_count; ++j) {
-            all_commands[i].parts[j] = strdup(command_parts[i][j]);
+            char *new_char = strdup(command_parts[i][j]);
+            if (new_char[0] == '"') {
+                new_char = new_char + 1;
+                new_char[strlen(new_char)-1] = 0;
+            }
+            all_commands[i].parts[j] = new_char;
         }
     }
     execute_commands(concurrent_count, all_commands);
@@ -144,7 +149,7 @@ int main(int argc, char **argv) {
         fclose(fp);
         return 0;
     }
-    char *path = getenv("PATH");
+    char *path = strdup(getenv("PATH"));
     char *rest = NULL;
     char *token;
     for (token = strtok_r(path, ":", &rest); token != NULL; token = strtok_r(NULL, ":", &rest)) {
