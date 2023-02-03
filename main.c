@@ -54,8 +54,8 @@ int get_matches(char **match_array, char *input_string, const char *pattern) {
 
 void parse_input(char *command) {
     char *concurrent_commands[1024];
-    char *pattern = "(([-a-zA-Z0-9.]+|(\"[^\"]+\"))\\s*)+;?";
-    char *pattern2 = "([-a-zA-Z0-9.]+|(\"[^\"]+\"))";
+    char *pattern = "(([-a-zA-Z0-9.\\/]+|(\"[^\"]+\"))\\s*)+;?";
+    char *pattern2 = "([-a-zA-Z0-9.\\/]+|(\"[^\"]+\"))";
     int concurrent_count = get_matches(concurrent_commands, command, pattern);
     char *command_parts[concurrent_count][1024];
     struct command all_commands[concurrent_count];
