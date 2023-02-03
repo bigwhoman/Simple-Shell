@@ -6,5 +6,8 @@ include_directories(/usr/include/readline)
 add_executable(Simple_Shell
         exec.c
         exec.h
+        pq.h
+        pq.c
+        colors.h
         main.c)
 target_link_libraries(Simple_Shell readline)

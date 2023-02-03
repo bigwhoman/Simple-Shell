@@ -7,9 +7,13 @@
 #include <pwd.h>
 #include "exec.h"
 #include "colors.h"
+#include "pq.h"
 
 #include <regex.h>
+#include <dirent.h>
 
+char execs[20000][512];
+int exec_size = 0;
 
 int get_matches(char **match_array, char *input_string, const char *pattern) {
     regex_t regex;
@@ -50,8 +54,8 @@ int get_matches(char **match_array, char *input_string, const char *pattern) {
 
 void parse_input(char *command) {
     char *concurrent_commands[1024];
-    char *pattern = "(([-a-zA-Z0-9.]+|(\"[^\"]+\"))\\s*)+;?";
-    char *pattern2 = "([-a-zA-Z0-9.]+|(\"[^\"]+\"))";
+    char *pattern = "(([-_a-zA-Z0-9.\\/]+|(\"[^\"]+\"))\\s*)+;?";
+    char *pattern2 = "([-_a-zA-Z0-9.\\/]+|(\"[^\"]+\"))";
     int concurrent_count = get_matches(concurrent_commands, command, pattern);
     char *command_parts[concurrent_count][1024];
     struct command all_commands[concurrent_count];
@@ -60,13 +64,65 @@ void parse_input(char *command) {
         int part_count = get_matches(command_parts[i], concurrent_commands[i], pattern2);
         all_commands[i].part_count = part_count;
         for (int j = 0; j < part_count; ++j) {
-            all_commands[i].parts[j] = strdup(command_parts[i][j]);
+            char *new_char = strdup(command_parts[i][j]);
+            if (new_char[0] == '"') {
+                new_char = new_char + 1;
+                new_char[strlen(new_char)-1] = 0;
+            }
+            all_commands[i].parts[j] = new_char;
         }
     }
     execute_commands(concurrent_count, all_commands);
     for (int i = 0; i < concurrent_count; ++i) {
         free(all_commands[i].parts);
     }
+}
+
+int is_sub(const char *str1, const char *str2) {
+    int len1 = strlen(str1);
+    int len2 = strlen(str2);
+    if (len1 < len2) {
+        return -1;
+    }
+    int hamming_distance = 0;
+    for (int i = 0; i < len2; i++) {
+        if (str1[i] != str2[i]) {
+            hamming_distance++;
+        }
+    }
+    if (hamming_distance > 1) {
+        return -1;
+    }
+    return hamming_distance * 5 + len1 - len2;
+}
+
+char **autocomplete(const char *text, int start, int end) {
+    if (start != 0 || strlen(text) < 3) {
+        return NULL;
+    }
+    PQ *pq = (PQ *) malloc(sizeof(PQ));
+    pq->queue = (PQItem **) malloc(20 * sizeof(PQItem *));
+    pq->size = -1;
+    for (int i = 0; i < exec_size; i++) {
+        int distance = is_sub(execs[i], text);
+        if (distance >= 0 && distance < 10) {
+            PQItem *item = (PQItem *) malloc(sizeof(PQItem));
+            item->distance = -distance;
+            item->value = strdup(execs[i]);
+            insert(pq, item);
+        }
+    }
+    if (pq->size < 0) {
+        return NULL;
+    }
+    int size = pq->size + 1;
+    char **suggested = (char **) malloc((size + 1) * sizeof(char *));
+    for (int i = 0; i < size; i++) {
+        PQItem *min = extractMin(pq);
+        suggested[i] = strdup(min->value);
+    }
+    suggested[size] = NULL;
+    return suggested;
 }
 
 int main(int argc, char **argv) {
@@ -92,6 +148,26 @@ int main(int argc, char **argv) {
         }
         fclose(fp);
         return 0;
+    }
+    char *path = strdup(getenv("PATH"));
+    char *rest = NULL;
+    char *token;
+    for (token = strtok_r(path, ":", &rest); token != NULL; token = strtok_r(NULL, ":", &rest)) {
+        DIR *d;
+        struct dirent *dir;
+        d = opendir(token);
+        if (d) {
+            while ((dir = readdir(d)) != NULL) {
+                if (strlen(dir->d_name) < 3) {
+                    continue;
+                }
+                strcpy(execs[exec_size], dir->d_name);
+                exec_size++;
+                exec_size %= 20000;
+            }
+            closedir(d);
+            rl_attempted_completion_function = autocomplete;
+        }
     }
     char *username;
     uid_t uid = geteuid();
