@@ -160,9 +160,6 @@ void init_path_files() {
 }
 
 int main(int argc, char **argv) {
-    printf("%p\n",sbrk(0));
-    int a[100];
-    printf("%p\n",sbrk(0));
     if (argc > 2) {
         fprintf(stderr, ANSI_COLOR_RED "Error: Too many arguments\n" ANSI_COLOR_RESET);
         return 0;
