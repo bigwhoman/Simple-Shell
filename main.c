@@ -67,7 +67,7 @@ void parse_input(char *command) {
             char *new_char = strdup(command_parts[i][j]);
             if (new_char[0] == '"') {
                 new_char = new_char + 1;
-                new_char[strlen(new_char)-1] = 0;
+                new_char[strlen(new_char) - 1] = 0;
             }
             all_commands[i].parts[j] = new_char;
         }
@@ -88,10 +88,10 @@ int is_sub(const char *str1, const char *str2) {
     for (int i = 0; i < len2; i++) {
         if (str1[i] != str2[i]) {
             hamming_distance++;
+            if (hamming_distance > 1) {
+                return -1;
+            }
         }
-    }
-    if (hamming_distance > 1) {
-        return -1;
     }
     return hamming_distance * 5 + len1 - len2;
 }
@@ -125,30 +125,19 @@ char **autocomplete(const char *text, int start, int end) {
     return suggested;
 }
 
-int main(int argc, char **argv) {
-    if (argc > 2) {
-        fprintf(stderr, ANSI_COLOR_RED "Error: Too many arguments\n" ANSI_COLOR_RESET);
-        return 0;
-    }
-    if (argc == 2) {
-        FILE *fp = fopen(argv[1], "r");
-        if (fp == NULL) {
-            fprintf(stderr, ANSI_COLOR_RED "Error: File couldn't be opened\n" ANSI_COLOR_RESET);
-            exit(0);
-        }
+void execute_file(FILE *fp) {
+    char input[1024];
 
-        char input[1024];
-
-        while (fgets(input, 1024, fp)) {
-            if (strlen(input) > 512) {
-                fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n" ANSI_COLOR_RESET);
-                continue;
-            }
-            parse_input(input);
+    while (fgets(input, 1024, fp)) {
+        if (strlen(input) > 512) {
+            fprintf(stderr, ANSI_COLOR_RED "Error: Input size too large\n" ANSI_COLOR_RESET);
+            continue;
         }
-        fclose(fp);
-        return 0;
+        parse_input(input);
     }
+}
+
+void init_path_files() {
     char *path = strdup(getenv("PATH"));
     char *rest = NULL;
     char *token;
@@ -166,10 +155,27 @@ int main(int argc, char **argv) {
                 exec_size %= 20000;
             }
             closedir(d);
-            rl_attempted_completion_function = autocomplete;
         }
     }
-    char *username;
+}
+
+int main(int argc, char **argv) {
+    if (argc > 2) {
+        fprintf(stderr, ANSI_COLOR_RED "Error: Too many arguments\n" ANSI_COLOR_RESET);
+        return 0;
+    }
+    if (argc == 2) {
+        FILE *fp = fopen(argv[1], "r");
+        if (fp == NULL) {
+            fprintf(stderr, ANSI_COLOR_RED "Error: File couldn't be opened\n" ANSI_COLOR_RESET);
+            exit(0);
+        }
+        execute_file(fp);
+        fclose(fp);
+        return 0;
+    }
+    init_path_files();
+    rl_attempted_completion_function = autocomplete;
     uid_t uid = geteuid();
     struct passwd *pw = getpwuid(uid);
     char hostname[256];
